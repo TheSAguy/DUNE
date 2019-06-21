@@ -9,6 +9,7 @@ require ("test_spawn")
 
 time_modifier = 1
 evo_increase_per_level = 0.025 --2.5%
+time_per_level = 600 -- 10 Min
 worker_spawn_time = 2 -- 2 Min
 attach_interval = worker_spawn_time
 
@@ -31,7 +32,12 @@ local function On_Init()
 	for k, chest in pairs (game.surfaces[1].find_entities_filtered{name = "dune-palace"}) do
 		chest.minable = false
 		chest.insert({name = "stone-brick", count = 1000})
+		chest.insert({name = "dune-worker", count = 5})
+		chest.insert({name = "firearm-magazine", count = 20})
+		chest.insert({name = "gun-turret", count = 1})
 		if settings.startup["start-with-vehicle-miner"] and settings.startup["start-with-vehicle-miner"].value == false then
+			chest.insert{name="vehicle-miner", count = 2}
+		elseif settings.startup["start-with-vehicle-miner"] and settings.startup["start-with-vehicle-miner"].value == true then 	
 			chest.insert{name="vehicle-miner", count = 1}
 		end
 		global.chests[chest.unit_number] = chest
@@ -65,7 +71,7 @@ local function On_Death(event)
 
 end
 
-time_per_level = 600
+
 levels =
 {
   -- 1
@@ -81,7 +87,7 @@ levels =
   {
     requirements =
     {
-      {name = "melange", count = 2000}
+      {name = "melange", count = 1500}
     },
     time = time_per_level/2 -- 5 Min 
   },
@@ -90,7 +96,7 @@ levels =
   {
     requirements =
     {
-      {name = "melange", count = 3000}
+      {name = "melange", count = 2500}
     },
     time = time_per_level/2 -- 5 Min 
   },
@@ -448,14 +454,14 @@ story_table =
             for k, player in pairs (game.players) do
               player.set_ending_screen_data({"points-achieved", util.format_number(global.points)})
             end
-			--- Create Enemy Forces that attack you when you don't finish your goal in time.
+			
 			if not global.emperor_message_1_sent then
 				game.print("The Emperor is not happy that you did not make the monthly shipment!")
 				game.print("Expect other houses to take advantage of this...")
 				global.emperor_message_1_sent = true
 			end
+			--- Create Enemy Forces that attack you when you don't finish your goal in time.
 			create_enemy_forces()
-            --game.set_game_state{game_finished=true, player_won=false}
             return false
           else
             return true
@@ -472,10 +478,8 @@ story_table =
         end
         global.level = global.level + 1
         local points_addition = (global.level - 1) * 10
-        --game.print({"level-completed", global.level - 1, util.format_number(points_addition)})
-		--game.print({"level-completed", global.level - 1})
-		game.print("Shipment "..(global.level - 1).."received. Goal Achieved!")
-		
+		game.print("Shipment "..(global.level - 1).." received. Goal Achieved!")
+		global.attack_increase = 0
         global.points = global.points + points_addition
 		global.emperor_message_1_sent = false
 		---- Increase Evolution factor by 2.5%
@@ -538,7 +542,7 @@ function plant_trees(event)
 			local PositionValid = game.surfaces[1].find_non_colliding_position(tree_name, position_c, 2 , 0.5)
 			
 			if PositionValid then 			
-				spawn_tree = game.surfaces[1].create_entity({name = tree_name, position = position_c})
+				spawn_tree = game.surfaces[1].create_entity({name = tree_name, position = PositionValid})
 			end
 			
 		end
@@ -556,11 +560,11 @@ function spawn_worms_on_melange(event)
 	for i = 1, #look_for_melange do
 
 	local worm_name
-		if game.forces.enemy.evolution_factor <= 0.1 then
+		if game.forces.enemy.evolution_factor <= 0.15 then
 			worm_name = "small-worm-turret"
-		elseif game.forces.enemy.evolution_factor <= 0.25 then
+		elseif game.forces.enemy.evolution_factor <= 0.30 then
 			worm_name = "medium-worm-turret"
-		elseif game.forces.enemy.evolution_factor <= 0.45 then
+		elseif game.forces.enemy.evolution_factor <= 0.50 then
 			worm_name = "big-worm-turret"
 		else
 			worm_name = "behemoth-worm-turret"
@@ -572,12 +576,12 @@ function spawn_worms_on_melange(event)
 		local PositionValid = game.surfaces[1].find_non_colliding_position(worm_name, look_for_melange[i].position, 2 , 0.5)
 		local look_for_worms = game.surfaces[1].find_entities_filtered{area = area, name = worm_name} 
 
-		if PositionValid then --and not look_for_worms then
+		if PositionValid then 
 			--game.print("Found Spot for Worm")
 			if #look_for_worms >= 1 then
 
 			else
-				spawn_spawner = game.surfaces[1].create_entity({name = worm_name, position = look_for_melange[i].position , force = game.forces.enemy})
+				spawn_worm = game.surfaces[1].create_entity({name = worm_name, position = PositionValid , force = game.forces.enemy})
 			end
 		end
 		
@@ -585,12 +589,66 @@ function spawn_worms_on_melange(event)
     end
 end
 
+--- Spawn worms on Melange
+function spawn_random_worms(event)
+
+	local worms = {"small-worm-turret", "medium-worm-turret", "big-worm-turret", "behemoth-worm-turret"}
+	local no_worms_found = true
+	for _, word in pairs(worms) do
+		local area = event.area
+		local look_for_worms = game.surfaces[1].find_entities_filtered{area = area, name = word} 
+		--game.print("Found this many Worms: "..#look_for_worms)
+		--if no other worms are found, spawn some new worms.
+		if #look_for_worms >= 0  then	
+			no_worms_found = true
+		end
+	
+	end
+	
+	if no_worms_found then
+		local number_of_worms = math.floor((math.floor(game.forces.enemy.evolution_factor * 10) + 2) / 2)
+		local worm_name
+		if game.forces.enemy.evolution_factor <= 0.15 then
+			worm_name = "small-worm-turret"
+		elseif game.forces.enemy.evolution_factor <= 0.30 then
+			worm_name = "medium-worm-turret"
+		elseif game.forces.enemy.evolution_factor <= 0.50 then
+			worm_name = "big-worm-turret"
+		else
+			worm_name = "behemoth-worm-turret"
+		end				
+		--game.print("Will spawn this many Worms: "..number_of_worms)
+		for i = 1, number_of_worms do
+					local x_offset = math.random(-16, 16)
+			local y_offset = math.random(-16, 16)
+			local c_x = event.area.left_top.x
+			local c_y = event.area.left_top.y
+			--{left_top = {-2, -3}, right_bottom = {5, 8}}
+			--local position = event.position
+			local position_c = {c_x + x_offset, c_y + y_offset}
+			
+			local PositionValid = game.surfaces[1].find_non_colliding_position(worm_name, position_c, 2 , 0.5)
+				if PositionValid then --and not look_for_worms then
+				--game.print("Found Spot for Worm")
+					spawn_worm = game.surfaces[1].create_entity({name = worm_name, position = PositionValid , force = game.forces.enemy})
+				end
+					
+		end
+		
+	end
+	
+end
+
+
 
 script.on_event(defines.events.on_chunk_generated, function(event)
     
 	--- Spawn worms on Melange
 	spawn_worms_on_melange(event)
 
+	--- Spawn some random worms
+	spawn_random_worms(event)	
+	
 	--- Place Palm trees around Water 
 	plant_trees(event)
 		
@@ -607,6 +665,7 @@ function on_joined(event)
   if event.name ~= defines.events.on_player_created then return end
   local player = game.players[event.player_index]
   player.insert{name = "iron-plate", count = 20}
+  player.insert{name = "firearm-magazine", count = 20}
   make_frame(player)
   if global.level < #levels then
     update_frame(player, levels[global.level + 1])
@@ -689,25 +748,26 @@ end
 function remove_worms()
 	if global.dune_worm_check then
 	global.dune_worm_check_count = global.dune_worm_check_count + 1
-	
-	if global.dune_worm_check_count >= 4 then
-		global.dune_worm_check = false
-	end
-	
-	local worms = {"small-worm-turret", "medium-worm-turret", "big-worm-turret", "behemoth-worm-turret"}
-	for _, word in pairs(worms) do
-		local radius = 150	
-		local area = {{0 - radius, 0 - radius}, {0 + radius, 0 + radius}}	
-		local look_for_worms = game.surfaces[1].find_entities_filtered{area = area, name = word} 
+		
+		if global.dune_worm_check_count >= 4 then
+			global.dune_worm_check = false
+		end
+		
+		local worms = {"small-worm-turret", "medium-worm-turret", "big-worm-turret", "behemoth-worm-turret"}
+		for _, word in pairs(worms) do
+			local radius = 150	
+			local area = {{0 - radius, 0 - radius}, {0 + radius, 0 + radius}}	
+			local look_for_worms = game.surfaces[1].find_entities_filtered{area = area, name = word} 
 
-		--game.print("Number of Worms: "..#look_for_worms)
-		if (#look_for_worms > 0)  then	
-			for i = 1, #look_for_worms do
-				local look_for_worms = look_for_worms[i]
-				look_for_worms.destroy()
-			end
-		end			
-	end
+			--game.print("Number of Worms: "..#look_for_worms)
+			if (#look_for_worms > 0)  then	
+				for i = 1, #look_for_worms do
+					local look_for_worms = look_for_worms[i]
+					look_for_worms.destroy()
+				end
+			end			
+		end
+	
 	end
 end
 	
@@ -811,16 +871,16 @@ end
 function create_enemy_forces()
 
 	global.attack_counter = global.attack_counter + 1
-	if global.attack_counter >= ((attach_interval * 60 * 60) - (global.level * 180)) then
+	if global.attack_counter >= ((attach_interval * 60 * 60) - (global.level * 180) - global.attack_increase) then
 	--game.print("Check True")
 		local time_left = get_time_left()
-		
+		global.attack_increase = global.attack_increase + 30 -- This will increse the attack frequency over time.
+		game.print("Attack Increase is: "..global.attack_increase)
 		if time_left <= 0 then
 								
 			for i = 1, (global.level + 1) do
 				
 				local position = {}
-				--local enemy_name = "rocket-guy"
 				local enemy_table = get_enemy_to_spawn()
 				local enemy_name = enemy_table.spawn		
 				local radius = 2.5
@@ -831,7 +891,6 @@ function create_enemy_forces()
 				if y_offset >= 0 and y_offset < save_zone then y_offset = y_offset + save_zone elseif y_offset >= (save_zone*-1) then y_offset = y_offset - save_zone end
 				local position = {x_offset, y_offset}
 				local area = {{x_offset - radius, y_offset - radius}, {x_offset + radius, y_offset + radius}}			
-
 			
 				for _,force in pairs( game.forces )do
 					if force.name == "enemy" then
@@ -839,15 +898,11 @@ function create_enemy_forces()
 						
 					end
 				end
-
-				
+			
 				local PositionValid = game.surfaces[1].find_non_colliding_position(enemy_name, position, 2 , 0.5)
-
-
+				
 				if PositionValid then 
 					--game.print("Enemy Force Spawned Name: "..enemy_name)
-					
-					
 					spawn_enemy_unit = game.surfaces[1].create_entity({name = enemy_name, position = PositionValid , force = game.forces.palyer})
 				end
 			end

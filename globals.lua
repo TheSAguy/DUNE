@@ -21,6 +21,10 @@ function globals()
 	if global.time_left == nil then
 		global.time_left = 0		
 	end	
+
+	if global.attack_increase == nil then
+		global.attack_increase = 0		
+	end	
 	
 end
 	
