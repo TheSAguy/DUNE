@@ -1,0 +1,12 @@
+{
+	"name": "Dune",
+	"version": "0.17.02",
+	"factorio_version": "0.17",
+	"title": "DUNE - The Spice must flow!",
+	"author": "TheSAguy",
+	"contact": "vvwmisc@hotmail.com",
+	"homepage": "",
+	"description": "Production Challenge where you need to collect Spice to survive",
+	"dependencies": ["base >= 0.17.47", "aai-vehicles-miner >= 0.4.7", "BlackMap >= 0.0.2", "Unit_Control >= 0.1.22", "Total_Automization >= 0.1.6", "?alien-biomes >= 0.4.14"]
+	
+}
