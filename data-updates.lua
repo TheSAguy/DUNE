@@ -5,6 +5,7 @@ require("prototypes/world/world_preset")
 require("prototypes/world/world")
 require("prototypes/units/total_automization_tweaks")
 require("prototypes/units/units")
+require("prototypes/units/moving_worms")
 
 
 local Blocked_Buildings = 
@@ -95,6 +96,40 @@ end
 
 
 
+---- Game Tweaks ---- Player
+if settings.startup["Double_Player_Reach"].value then	
 
+	local chr = data.raw.character.character
+	
+	--- Loot Picup	
+	if chr.loot_pickup_distance then
+		chr.loot_pickup_distance = chr.loot_pickup_distance * 2 
+	end	
+
+	if chr.build_distancethen then -- Vanilla 6
+		chr.build_distance = chr.build_distance * 2
+	end
+	
+	if chr.drop_item_distance then -- Vanilla 6
+		chr.drop_item_distance = chr.drop_item_distance * 2
+	end
+	
+	if chr.reach_distance then -- Vanilla 6
+		chr.reach_distance = chr.reach_distance * 2
+	end
+
+	if chr.item_pickup_distance then -- Vanilla 1
+		chr.item_pickup_distance = chr.item_pickup_distance * 2
+	end
+	
+	if chr.reach_resource_distance then -- Vanilla 2.7
+		chr.reach_resource_distance = chr.reach_resource_distance * 2
+	end
+		
+	if chr.resource_reach_distance then -- Vanilla 2.7
+		chr.resource_reach_distance = chr.resource_reach_distance * 2
+	end
+
+end	
 
 

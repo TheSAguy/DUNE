@@ -5,7 +5,7 @@ function test_spawn()
 
 	local surface = game.surfaces['nauvis']
 
-	--[[
+
 --local Spawn_trees = function(tree_name, y)	
 	for i = 1, 20 do
 	
@@ -18,9 +18,10 @@ function test_spawn()
 		--surface.create_entity({name= "tree-03", position={i, -16}, force = game.forces.player})-- ok
 		--surface.create_entity({name= "tree-04", position={i, -12}, force = game.forces.player})
 		--surface.create_entity({name= "tree-05", position={i, -8}, force = game.forces.player})
-		surface.create_entity({name= "tree-06", position={i, 12}, force = game.forces.player}) -- ok
-		surface.create_entity({name= "tree-06-brown", position={i, 16}, force = game.forces.player}) -- ok
+	--	surface.create_entity({name= "tree-06", position={i, 12}, force = game.forces.player}) -- ok
+	--	surface.create_entity({name= "tree-06-brown", position={i, 16}, force = game.forces.player}) -- ok
 		--surface.create_entity({name= "tree-07", position={i, 4}, force = game.forces.player})
+--[[
 		--surface.create_entity({name= "tree-08", position={i, 8}, force = game.forces.player})
 		--surface.create_entity({name= "tree-08-brown", position={i, 12}, force = game.forces.player})
 		surface.create_entity({name= "tree-08-red", position={i, 20}, force = game.forces.player})
@@ -44,18 +45,18 @@ surface.create_entity({ name= "tree-desert-e", position={i, 32}, force = game.fo
 surface.create_entity({ name= "tree-desert-f", position={i, 40}, force = game.forces.player})
 	
 surface.create_entity({ name= "tree-desert-g", position={i, 48}, force = game.forces.player})
-
-
+]]
+	--surface.create_entity({ name= "smg-guy", position={0, -150}, force = game.forces.enemy})
 
 
 		
 	end
-	]]
+
 	
 	
 
 	local chest2 = game.surfaces[1].create_entity{name = "steel-chest", position = {0, -10}, force = game.forces.player}
-	chest2.insert{name="melange", count = 10000}
+	chest2.insert{name="melange", count = 20000}
 	--chest2.insert{name="stone", count = 100}
 	
 	local function player_insert_items(event, item, count)

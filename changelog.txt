@@ -1,4 +1,31 @@
 ---------------------------------------------------------------------------------------------------
+Version: 0.17.8
+Date: 6. 25. 2019
+  Features:
+    - Enemy units scale better
+    - There should now be attack groups periodical
+    - Lowered Starting Goals slightly again
+  Bugfix:
+    - Compatible with Factorio 0.17.51
+---------------------------------------------------------------------------------------------------
+Version: 0.17.7
+Date: 6. 21. 2019
+  Features:
+    - Starting Setting: Increase player reach
+    - Lowered Starting Goals
+    - You won't get a new worker if you're out of time on your current goal	
+---------------------------------------------------------------------------------------------------
+Version: 0.17.6
+Date: 6. 21. 2019
+  Bugfix:
+    - Removed "game.print" message
+---------------------------------------------------------------------------------------------------
+Version: 0.17.5
+Date: 6. 21. 2019
+  Features:
+    - Optimized Graphics: https://forums.factorio.com/viewtopic.php?f=70&t=30591#p224304
+    - Moving Worms! - Thanks to Darkfrei!!
+---------------------------------------------------------------------------------------------------
 Version: 0.17.4
 Date: 6. 21. 2019
   Features:
@@ -8,7 +35,7 @@ Version: 0.17.3
 Date: 6. 21. 2019
   Features:
     - Updated Starting materials. You get two harvesters and 5 workers and a turret gun 
-    - Added a few random worms spawns
+    - Added a few random worm spawns
 ---------------------------------------------------------------------------------------------------
 Version: 0.17.2
 Date: 6. 20. 2019

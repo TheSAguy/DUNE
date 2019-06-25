@@ -12,6 +12,17 @@ data:extend(
     per_user = true,
   },
  
+	-- B
+  
+  {
+	name = "Double_Player_Reach",
+	type = "bool-setting",
+    setting_type = "startup",
+    default_value = true,
+	order = "b[modifier]-b[Double_Player_Reach]",
+    per_user = true,
+  },
+ 
 
 
 --[[

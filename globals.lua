@@ -26,5 +26,9 @@ function globals()
 		global.attack_increase = 0		
 	end	
 	
+	if global.level_started_at == nil then
+		global.level_started_at = 0		
+	end		
+
 end
 	

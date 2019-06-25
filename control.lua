@@ -16,6 +16,8 @@ attach_interval = worker_spawn_time
 points_per_second_start = 5 -- Not Used
 points_per_second_level_subtract = 0.2 -- Not Used
 
+--------------------------------------------------------------------------
+
 local function On_Init()
 
 	--test_spawn()
@@ -33,8 +35,8 @@ local function On_Init()
 		chest.minable = false
 		chest.insert({name = "stone-brick", count = 1000})
 		chest.insert({name = "dune-worker", count = 5})
-		chest.insert({name = "firearm-magazine", count = 20})
-		chest.insert({name = "gun-turret", count = 1})
+		chest.insert({name = "firearm-magazine", count = 50})
+		chest.insert({name = "gun-turret", count = 2})
 		if settings.startup["start-with-vehicle-miner"] and settings.startup["start-with-vehicle-miner"].value == false then
 			chest.insert{name="vehicle-miner", count = 2}
 		elseif settings.startup["start-with-vehicle-miner"] and settings.startup["start-with-vehicle-miner"].value == true then 	
@@ -42,15 +44,13 @@ local function On_Init()
 		end
 		global.chests[chest.unit_number] = chest
 	end
+	
 	global.level = 1
 	global.points = 0
-	
-
 	
 end
 
 
---------------------------------------------------------------------
 local function On_Config_Change()
 
 	globals()
@@ -71,6 +71,7 @@ local function On_Death(event)
 
 end
 
+--------------------------------------------------------------------
 
 levels =
 {
@@ -87,7 +88,7 @@ levels =
   {
     requirements =
     {
-      {name = "melange", count = 1500}
+      {name = "melange", count = 1000}
     },
     time = time_per_level/2 -- 5 Min 
   },
@@ -96,7 +97,7 @@ levels =
   {
     requirements =
     {
-      {name = "melange", count = 2500}
+      {name = "melange", count = 1500}
     },
     time = time_per_level/2 -- 5 Min 
   },
@@ -105,7 +106,7 @@ levels =
   {
     requirements =
     {
-		{name = "melange", count = 4000}
+		{name = "melange", count = 2500}
     },
     time = time_per_level/2 -- 5 Min  -- 20 min of game time up.
   },
@@ -114,7 +115,7 @@ levels =
   {
     requirements =
     {
-		{name = "melange", count = 5000}
+		{name = "melange", count = 4000}
     },
     time = time_per_level -- 10 Min  
   },
@@ -123,7 +124,7 @@ levels =
   {
     requirements =
     {
-		{name = "melange", count = 7500}
+		{name = "melange", count = 6500}
     },
     time = time_per_level -- 10 Min 
   },
@@ -284,6 +285,7 @@ function update_info()
 end
 
 function get_time_left()
+	
   return global.level_started_at + time_modifier * levels[global.level].time * 60 - game.tick
 end
 
@@ -318,17 +320,26 @@ script.on_event(defines.events.on_tick, function(event)
 		remove_worms()
 	end
   
-  
 	-- Create a Worker 
 	if game.tick % (60 * 60 * worker_spawn_time) == 0 then -- 3600 = one min
-		local PositionValid = game.surfaces[1].find_non_colliding_position("dune-worker", {-1, 4}, 2 , 1)
+		local time_left = get_time_left()
+		if time_left >=0 then
+			local PositionValid = game.surfaces[1].find_non_colliding_position("dune-worker", {-1, 4}, 2 , 1)
 			if PositionValid then
 				spawn_worker = game.surfaces[1].create_entity({name = "dune-worker", position = PositionValid, force = game.forces.player})
 			else	
-				--game.print("No Position")
+				game.print("No Spawn Position found for worker. Make sure nothing is around Palace")
 			end	
+		end	
 	end
 		
+	--- Attack every 20 min
+	if game.tick % (60 * 60 * 10 * worker_spawn_time) == 0 then
+		
+		create_attack_group(global.level)
+		
+	end
+	
 end)
 
 story_table =
@@ -419,10 +430,10 @@ story_table =
         local time_left = get_time_left()
 
         if event.name == defines.events.on_gui_click and
-           event.element.name == "next_level" then --- Clicking this button does not work!
+           event.element.name == "next_level" then --- !! Clicking this button does not work!
           local seconds_left = math.floor(time_left / 60)
           local points_addition = math.floor(seconds_left * (points_per_second_start - global.level * points_per_second_level_subtract))
-          --game.print({"time-bonus", util.format_number(points_addition), seconds_left})
+         
           global.points = global.points + points_addition		  
 		   
           for k, player in pairs (game.players) do
@@ -476,6 +487,7 @@ story_table =
             mod_gui.get_button_flow(player).next_level.destroy()
           end
         end
+		--- Level GOAL Achieved
         global.level = global.level + 1
         local points_addition = (global.level - 1) * 10
 		game.print("Shipment "..(global.level - 1).." received. Goal Achieved!")
@@ -484,10 +496,10 @@ story_table =
 		global.emperor_message_1_sent = false
 		---- Increase Evolution factor by 2.5%
 		game.forces.enemy.evolution_factor = game.forces.enemy.evolution_factor + evo_increase_per_level
-		
+		--- Send out an attack group
+		create_attack_group_alt(global.level)
 
 		for k, chest in pairs (game.surfaces[1].find_entities_filtered{name = "dune-palace"}) do
-			--game.print("Stuff Added to Palace")
 			--- Insert Rewards
 			local rewards_table = get_rewards_to_add()
 			local rewards_name = rewards_table.spawn	
@@ -555,7 +567,6 @@ end
 function spawn_worms_on_melange(event)
 
 	local look_for_melange = game.surfaces[1].find_entities_filtered{area = event.area, name = "melange"} 
-	--game.print("Got to on_chunk_generated")
         
 	for i = 1, #look_for_melange do
 
@@ -577,7 +588,6 @@ function spawn_worms_on_melange(event)
 		local look_for_worms = game.surfaces[1].find_entities_filtered{area = area, name = worm_name} 
 
 		if PositionValid then 
-			--game.print("Found Spot for Worm")
 			if #look_for_worms >= 1 then
 
 			else
@@ -592,44 +602,77 @@ end
 --- Spawn worms on Melange
 function spawn_random_worms(event)
 
-	local worms = {"small-worm-turret", "medium-worm-turret", "big-worm-turret", "behemoth-worm-turret"}
-	local no_worms_found = true
+			local lt = event.area.left_top
+			local rb = event.area.right_bottom
+			local tx = lt.x
+			local ty = lt.y
+			local rx = rb.x
+			local ry = rb.y
+			local x_center = 0
+			local y_center = 0		
+
+			if tx <= 0 and rx <= 0 then x_center = (tx+rx)/2 end
+			if tx >= 0 and rx >= 0 then x_center = (tx+rx)/2 end
+			if tx < 0 and rx > 0 then x_center = (tx-rx+1)/2 end
+			
+			if ty <= 0 and ry <= 0 then y_center = (ty+ry)/2 end
+			if ty >= 0 and ry >= 0 then y_center = (ty+ry)/2 end
+			if ty < 0 and ry > 0 then y_center = (ty-ry+1)/2 end	
+
+
+	local worms = {"small-worm-turret", "medium-worm-turret", "big-worm-turret", "behemoth-worm-turret", "unit-small-worm-turret", "unit-medium-worm-turret", "unit-big-worm-turret", "unit-behemoth-worm-turret"}
+	local number_of_worms_found = 0
 	for _, word in pairs(worms) do
-		local area = event.area
-		local look_for_worms = game.surfaces[1].find_entities_filtered{area = area, name = word} 
-		--game.print("Found this many Worms: "..#look_for_worms)
+		local radius = 14
+		local radius2 = 25
+		local area = {{x_center - radius, y_center - radius}, {x_center + radius, y_center + radius}}	
+		local area2 = {{x_center - radius2, y_center - radius2}, {x_center + radius2, y_center + radius2}}	
+		local look_for_worms = game.surfaces[1].find_entities_filtered{area = area2, name = word} 
 		--if no other worms are found, spawn some new worms.
+		--[[
+		for _,force in pairs( game.forces ) do
+			force.chart( game.surfaces[1], area2)
+		end
+		]]
+		--game.print("Number of Worms Found in Area: "..#look_for_worms)
 		if #look_for_worms >= 0  then	
-			no_worms_found = true
+			number_of_worms_found = number_of_worms_found + #look_for_worms
 		end
 	
 	end
+
+
 	
-	if no_worms_found then
-		local number_of_worms = math.floor((math.floor(game.forces.enemy.evolution_factor * 10) + 2) / 2)
+	local look_for_palace = game.surfaces[1].find_entities_filtered{area = event.area, name = "dune-palace"}	
+	--game.print("Number of Worms Found: "..number_of_worms_found)
+	--game.print("Number of Palaces Found: "..#look_for_palace)
+	if number_of_worms_found <= 0 and #look_for_palace <= 0 then
+		local number_of_worms = math.floor((math.floor(game.forces.enemy.evolution_factor * 10) + 1) / 2)
+		if number_of_worms < 1 then number_of_worms = 1 end
 		local worm_name
-		if game.forces.enemy.evolution_factor <= 0.15 then
-			worm_name = "small-worm-turret"
-		elseif game.forces.enemy.evolution_factor <= 0.30 then
-			worm_name = "medium-worm-turret"
-		elseif game.forces.enemy.evolution_factor <= 0.50 then
-			worm_name = "big-worm-turret"
+		if game.forces.enemy.evolution_factor <= 0.20 then
+			worm_name = "unit-small-worm-turret"
+		elseif game.forces.enemy.evolution_factor <= 0.40 then
+			worm_name = "unit-medium-worm-turret"
+		elseif game.forces.enemy.evolution_factor <= 0.65 then
+			worm_name = "unit-big-worm-turret"
 		else
-			worm_name = "behemoth-worm-turret"
+			worm_name = "unit-behemoth-worm-turret"
 		end				
-		--game.print("Will spawn this many Worms: "..number_of_worms)
+
+
 		for i = 1, number_of_worms do
-					local x_offset = math.random(-16, 16)
-			local y_offset = math.random(-16, 16)
-			local c_x = event.area.left_top.x
-			local c_y = event.area.left_top.y
-			--{left_top = {-2, -3}, right_bottom = {5, 8}}
-			--local position = event.position
-			local position_c = {c_x + x_offset, c_y + y_offset}
+			---- Find the center of the generated Chunk
+		
+
+			local x_center_r = math.random(x_center-14, x_center+14)
+			local y_center_r = math.random(y_center-14, y_center+14)
 			
-			local PositionValid = game.surfaces[1].find_non_colliding_position(worm_name, position_c, 2 , 0.5)
-				if PositionValid then --and not look_for_worms then
-				--game.print("Found Spot for Worm")
+			local position_c_r = {x_center_r, y_center_r}
+
+					
+			local PositionValid = game.surfaces[1].find_non_colliding_position(worm_name, position_c_r, 2 , 0.5)
+				if PositionValid then 
 					spawn_worm = game.surfaces[1].create_entity({name = worm_name, position = PositionValid , force = game.forces.enemy})
 				end
 					
@@ -637,10 +680,11 @@ function spawn_random_worms(event)
 		
 	end
 	
+
 end
-
-
-
+	
+	
+	
 script.on_event(defines.events.on_chunk_generated, function(event)
     
 	--- Spawn worms on Melange
@@ -753,13 +797,12 @@ function remove_worms()
 			global.dune_worm_check = false
 		end
 		
-		local worms = {"small-worm-turret", "medium-worm-turret", "big-worm-turret", "behemoth-worm-turret"}
+		local worms = {"small-worm-turret", "medium-worm-turret", "big-worm-turret", "behemoth-worm-turret", "unit-small-worm-turret", "unit-medium-worm-turret", "unit-big-worm-turret", "unit-behemoth-worm-turret"}
 		for _, word in pairs(worms) do
-			local radius = 150	
+			local radius = 200	
 			local area = {{0 - radius, 0 - radius}, {0 + radius, 0 + radius}}	
 			local look_for_worms = game.surfaces[1].find_entities_filtered{area = area, name = word} 
 
-			--game.print("Number of Worms: "..#look_for_worms)
 			if (#look_for_worms > 0)  then	
 				for i = 1, #look_for_worms do
 					local look_for_worms = look_for_worms[i]
@@ -822,9 +865,10 @@ function get_rewards_to_add()
 			{spawn="dune-worker" , weight = 300, count = 2},
 			{spawn="dune-worker" , weight = 50, count = 3},
 			{spawn="vehicle-miner" , weight = 10, count = 1},
-			{spawn="radar" , weight = 20, count = 1},
+			{spawn="radar" , weight = 30, count = 1},
 			{spawn="stone" , weight = 100, count = 400},
 			{spawn="stone-brick" , weight = 300, count = 100},
+			{spawn="gun-turret" , weight = 60, count = 1},
 		}
 					  
 	local calculate_odds = {}
@@ -842,19 +886,49 @@ end
 	
 --- Select the Enemy to Spawn												
 function get_enemy_to_spawn()
+	local enemy_options = {}
 	local factor = math.floor(game.forces.enemy.evolution_factor * 1000)
-	local enemy_options = 
+	local enemy_options_tier1 = 
 		{
+		  {spawn="unit-small-worm-turret", weight = 500}, -- 500
+		  {spawn="smg-guy", weight = 2100 - (factor*2)},   --  2100 - 100
+		  {spawn="rocket-guy" , weight = 1150 - (factor)}, -- 1150 - 150
+		  {spawn="blaster-bot", weight = 1200 - (factor)}, --  1100 - 100
+		  {spawn="tazer-bot" , weight = 400 - (factor/4)}, -- 400 - 150
+		}
+
+	local enemy_options_tier2 = 
+		{
+		  {spawn="unit-medium-worm-turret", weight = 500}, -- 500
 		  {spawn="smg-guy", weight = 2100 - (factor*2)},   --  2100 - 100
 		  {spawn="rocket-guy" , weight = 1150 - (factor)}, -- 1150 - 150
 		  {spawn="scout-car" , weight = 300 + (factor/4)},-- 300 - 550
-		  {spawn="shell-tank" , weight = 1 + (factor)}, -- 1 - 1000
 		  {spawn="blaster-bot", weight = 1200 - (factor)}, --  1100 - 100
+		  {spawn="tazer-bot" , weight = 400 - (factor/4)}, -- 400 - 150
+		  {spawn="laser-bot" , weight = 50 + (factor/4)}, -- 50 - 300
+		}
+
+	local enemy_options_tier3 = 
+		{
+		  {spawn="unit-big-worm-turret", weight = 500}, -- 500		 
+		  {spawn="unit-behemoth-worm-turret", weight = 10}, -- 10		 
+		  {spawn="rocket-guy" , weight = 1150 - (factor)}, -- 1150 - 150
+		  {spawn="scout-car" , weight = 300 + (factor/4)},-- 300 - 550
+		  {spawn="shell-tank" , weight = 1 + (factor)}, -- 1 - 1000
 		  {spawn="tazer-bot" , weight = 400 - (factor/4)}, -- 400 - 150
 		  {spawn="laser-bot" , weight = 50 + (factor/4)}, -- 50 - 300
 		  {spawn="plasma-bot" , weight = 5 + (factor)}, -- 5 - 1005
 		}
-					  
+	
+		if global.level <= 5 then 
+			enemy_options = enemy_options_tier1
+		elseif global.level <= 10 then 
+			enemy_options = enemy_options_tier2
+		else 
+			enemy_options = enemy_options_tier3
+		end
+
+		
 	local calculate_odds = {}
 	for k,spawn in ipairs(enemy_options) do
 		for i=1, spawn.weight do
@@ -872,10 +946,10 @@ function create_enemy_forces()
 
 	global.attack_counter = global.attack_counter + 1
 	if global.attack_counter >= ((attach_interval * 60 * 60) - (global.level * 180) - global.attack_increase) then
-	--game.print("Check True")
+
 		local time_left = get_time_left()
 		global.attack_increase = global.attack_increase + 30 -- This will increse the attack frequency over time.
-		game.print("Attack Increase is: "..global.attack_increase)
+
 		if time_left <= 0 then
 								
 			for i = 1, (global.level + 1) do
@@ -884,9 +958,10 @@ function create_enemy_forces()
 				local enemy_table = get_enemy_to_spawn()
 				local enemy_name = enemy_table.spawn		
 				local radius = 2.5
-				local x_offset = math.random(-500, 500) 
-				local y_offset = math.random(-500, 500) 
-				local save_zone = 100
+				local spawn_radius = (400 + (global.level * 20))
+				local x_offset = math.random(-spawn_radius, spawn_radius) 
+				local y_offset = math.random(-spawn_radius, spawn_radius) 
+				local save_zone = 100 - (global.attack_increase / 15)
 				if x_offset >= 0 and x_offset < save_zone then x_offset = x_offset + save_zone elseif x_offset >= (save_zone*-1) then x_offset = x_offset - save_zone end
 				if y_offset >= 0 and y_offset < save_zone then y_offset = y_offset + save_zone elseif y_offset >= (save_zone*-1) then y_offset = y_offset - save_zone end
 				local position = {x_offset, y_offset}
@@ -902,19 +977,173 @@ function create_enemy_forces()
 				local PositionValid = game.surfaces[1].find_non_colliding_position(enemy_name, position, 2 , 0.5)
 				
 				if PositionValid then 
-					--game.print("Enemy Force Spawned Name: "..enemy_name)
 					spawn_enemy_unit = game.surfaces[1].create_entity({name = enemy_name, position = PositionValid , force = game.forces.palyer})
 				end
 			end
 		end
+	--- Send the units to attack
+	create_attack_group(global.level)
 	global.attack_counter = 0
 	end	
 end
 	
 
+local function shuffle(tbl)
+	local size = #tbl
+		for i = size, 1, -1 do
+			local rand = math.random(size)
+			tbl[i], tbl[rand] = tbl[rand], tbl[i]
+		end
+	return tbl
+end
 
 
+function create_attack_group(level)
+
+	local radius = (50 + (level * 5))
+	local surface = game.surfaces[1]
+	local harvesters = {"vehicle-miner", "vehicle-miner-mk2", "vehicle-miner-mk3", "vehicle-miner-mk4", "vehicle-miner-mk5", "electric-mining-drill", "dune-palace"}
+	local palace = surface.find_entities_filtered({name = "dune-palace"})
+	local target_harvester = {}	
+	local unit_groups = {}
 	
+	for _, word in pairs(harvesters) do			
+		local units = surface.find_entities_filtered({name = word})
+		if #units > 0 then	
+			for i = 1, #units do
+				table.insert(target_harvester, {entity = units[i], x = units[i].position.x, y = units[i].position.x})
+			end
+		end
+	end
+	
+	if #target_harvester > 0 then	
+		target_harvester = shuffle(target_harvester)
+		for i = 1, #target_harvester do
+			unit_groups[i] = surface.create_unit_group({position = target_harvester[i].entity.position})
+			local enemy_units = surface.find_enemy_units(target_harvester[i].entity.position, radius, "player")
+				
+			for _, enemy_unit in pairs(enemy_units) do
+
+				unit_groups[i].add_member(enemy_unit)
+				
+				unit_groups[i].set_command({
+				type = defines.command.compound,
+				structure_type = defines.compound_command.logical_and,
+				commands = {
+					
+					{
+						type=defines.command.attack_area,
+						destination={target_harvester[1].x, target_harvester[1].y},
+						radius=32,
+						distraction=defines.distraction.by_anything
+					},						
+					{
+						type=defines.command.attack_area,
+						destination=palace[1].position,
+						radius=32,
+						distraction=defines.distraction.by_anything
+					},
+					
+					{
+						type=defines.command.attack,
+						target=palace[1],
+						distraction=defines.distraction.by_enemy
+					}					
+				}
+				})
+					
+				unit_groups[i].start_moving()
+
+			end
+				
+		end		
+	end
+	
+end	
+			
+
+
+
+function create_attack_group_alt(level)
+	
+	
+	local surface = game.surfaces[1]
+	local radius = (25 + (level * 15))		
+	local units = surface.find_entities_filtered({type = "unit"})
+	units = shuffle(units)
+	local unit_groups = {}
+	
+	for i = 1, 2, 1 do
+		if not units[i] then break end
+		if not units[i].valid then break end
+		unit_groups[i] = surface.create_unit_group({position = {x = units[i].position.x, y = units[i].position.y}})
+		local biters = surface.find_enemy_units(units[i].position, radius, "player")
+		for _, biter in pairs(biters) do
+			unit_groups[i].add_member(biter)
+		end
+	end
+	
+	--	Targets
+	local harvesters = {"vehicle-miner", "vehicle-miner-mk2", "vehicle-miner-mk3", "vehicle-miner-mk4", "vehicle-miner-mk5", "electric-mining-drill", "dune-palace"}
+	local target_harvester = {}	
+
+	for _, word in pairs(harvesters) do			
+		local units = surface.find_entities_filtered({name = word})
+		
+
+		if #units > 0 then	
+			for i = 1, #units do
+				table.insert(target_harvester, {x = units[i].position.x, y = units[i].position.x})
+			end
+		end
+	end
+
+	local palace = surface.find_entities_filtered({name = "dune-palace"})
+	target_harvester = shuffle(target_harvester)
+	
+	if #unit_groups > 0 then
+		for i = 1, #unit_groups, 1 do
+		if unit_groups[i].valid then
+			if #unit_groups[i].members > 0 then
+
+				unit_groups[i].set_command({
+					type = defines.command.compound,
+					structure_type = defines.compound_command.logical_and,
+					commands = {
+						
+						{
+							type=defines.command.attack_area,
+							destination={target_harvester[1].x, target_harvester[1].y},
+							radius=32,
+							distraction=defines.distraction.by_anything
+						},						
+						{
+							type=defines.command.attack_area,
+							destination=palace[1].position,
+							radius=32,
+							distraction=defines.distraction.by_anything
+						},
+						
+						{
+							type=defines.command.attack,
+							target=palace[1],
+							distraction=defines.distraction.by_enemy
+						}					
+					}
+					})
+					
+					unit_groups[i].start_moving()
+				else
+					unit_groups[i].destroy()
+				end
+			end
+		end
+	
+	end
+	
+end
+	
+---------------------------------------------------------------------------------
 				
 script.on_init(On_Init)
 script.on_configuration_changed(On_Config_Change)

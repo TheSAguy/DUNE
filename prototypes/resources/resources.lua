@@ -60,7 +60,7 @@ data:extend({
 			random_spot_size_maximum = 2, 
 			additional_richness = 100000, -- this increases the total everywhere, so base_density needs to be decreased to compensate
 			has_starting_area_placement = true,
-			resource_index = resource_autoplace.get_next_resource_index() + 10,
+			--resource_index = resource_autoplace.get_next_resource_index() + 10,
 			regular_rq_factor_multiplier = 1,
 			--starting_rq_factor_multiplier = 5
 		},
@@ -126,7 +126,7 @@ data:extend({
       has_starting_area_placement = true,
       random_spot_size_minimum = 1,
       random_spot_size_maximum = 2,
-      resource_index = resource_autoplace.get_next_resource_index() + 15,
+      --resource_index = resource_autoplace.get_next_resource_index() + 15,
       base_density = 1.5,
       regular_rq_factor_multiplier = 1.1,
       starting_rq_factor_multiplier = 2
@@ -193,93 +193,3 @@ data:extend({
 
 }
 ) 
-
---[[
-
-	{
-    type = "resource",
-    name = "melange",
-    icon = "__Dune__/graphics/icons/melange.png",
-    icon_size = 64,
-    flags = {"placeable-neutral"},
-    order="b",
-    tree_removal_probability = 1,
-    tree_removal_max_distance = 32 * 32,
-    minable =
-    {
-      mining_particle = "stone-particle",
-      mining_time = 2,
-      result = "melange",
-    },
-    collision_box = {{ -0.1, -0.1}, {0.1, 0.1}},
-    selection_box = {{ -0.5, -0.5}, {0.5, 0.5}},
-    autoplace = resource_autoplace.resource_autoplace_settings{
-      name = "melange",
-      order = "bx",
-      base_density = 6,
-      base_spots_per_km2 = 0.85,
-      has_starting_area_placement = true,
-      random_spot_size_minimum = 2,
-      random_spot_size_maximum = 4,
-      resource_index = resource_autoplace.get_next_resource_index() + 10,
-      regular_rq_factor_multiplier = 1,
-	  starting_rq_factor_multiplier = 2
-    },
-    stage_counts = {10000, 6330, 3670, 1930, 870, 270, 100, 50},
-	--stage_counts = {20000, 10000, 7000, 4000, 2000, 1000, 350, 100},
-    stages =
-    {
-      sheet =
-      {
-        filename = "__Dune__/graphics/resources/melange-ore.png",
-        priority = "extra-high",
-        width = 64,
-        height = 64,
-        frame_count = 8,
-        variation_count = 8,
-        hr_version =
-        {
-          filename = "__Dune__/graphics/resources/hr-melange-ore.png",
-          priority = "extra-high",
-          width = 128,
-          height = 128,
-          frame_count = 8,
-          variation_count = 8,
-          scale = 0.5
-        }
-      }
-    },
-    stages_effect =
-    {
-      sheet =
-      {
-        filename = "__Dune__/graphics/resources/melange-ore-glow.png",
-        priority = "extra-high",
-        width = 64,
-        height = 64,
-        frame_count = 8,
-        variation_count = 8,
-        blend_mode = "additive",
-        flags = {"light"},
-        hr_version =
-        {
-          filename = "__Dune__/graphics/resources/hr-melange-ore-glow.png",
-          priority = "extra-high",
-          width = 128,
-          height = 128,
-          frame_count = 8,
-          variation_count = 8,
-          scale = 0.5,
-          blend_mode = "additive",
-          flags = {"light"}
-        }
-      }
-    },
-    effect_animation_period = 5,
-    effect_animation_period_deviation = 1,
-    effect_darkness_multiplier = 3.6,
-    min_effect_alpha = 0.2,
-    max_effect_alpha = 0.3,
-    map_color = {r=1, g=170/255, b=0}
-  },
-  ]]

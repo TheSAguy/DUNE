@@ -338,13 +338,12 @@ end
 local disable_non_desert_tiles = function()
 	for _, tile_name in pairs(data.raw["tile"]) do
 		if game_tiles[tile_name.name] then
-		--log("DUNE TILE to Remove: "..tile_name.name)
 			remove_tile(tile_name.name)
 		end
 	end  
 end
 
-
+--- Floors remove decal
 local tiles_remove_decal = function()
 	for _, tile_name in pairs(data.raw["tile"]) do
 		if vanilla_floor_tile_names[tile_name.name] then
@@ -356,6 +355,10 @@ local tiles_remove_decal = function()
 		end
 	end  
 end
+
+
+
+
 
 -- Remove Water gen
 local remove_water_autoplace = function()
@@ -405,6 +408,40 @@ if settings.startup["Remove_Vanilla_Spawners"].value then
 end
 
 
+
+--add collision mask to entities 
+local function add_Collision_Layer(entity,layer)
+	if not entity  then return end
+	if entity.collision_mask then
+		table.insert(entity.collision_mask, layer);
+	else
+		entity.collision_mask = {layer,"water-tile","player-layer"} 
+	end
+end
+
+
+local worm_collision_layer = "layer-14"
+local worms = {"small-worm-turret", "medium-worm-turret", "big-worm-turret", "behemoth-worm-turret"}
+
+
+for i, worm_name in pairs (worms) do
+  local worm = data.raw.turret[worm_name]
+  if worm then
+	add_Collision_Layer(worm, worm_collision_layer)
+  end
+end
+
+
+--- Add Worm Collision to Floors
+local floor_worm_collision_mask = function()
+	for _, tile_name in pairs(data.raw["tile"]) do
+		if vanilla_floor_tile_names[tile_name.name] then
+			add_Collision_Layer(tile_name, worm_collision_layer)
+		end
+	end  
+end
+
+
 --- Increase worm population
 data.raw.turret["small-worm-turret"].autoplace = enemy_autoplace.enemy_spawner_autoplace(0)
 
@@ -419,6 +456,7 @@ data.raw.turret["behemoth-worm-turret"].build_base_evolution_requirement = 0.50
 
 
 
+
 -- Remove Landfill
 data.raw.technology["landfill"].enabled = false
 data.raw.recipe["landfill"].hidden = true
@@ -430,6 +468,6 @@ disable_non_desert_tiles()
 disable_certen_trees()
 remove_water_autoplace()
 tiles_remove_decal()
-
+floor_worm_collision_mask()
 
 	
