@@ -126,7 +126,6 @@ data:extend({
       has_starting_area_placement = true,
       random_spot_size_minimum = 1,
       random_spot_size_maximum = 2,
-      --resource_index = resource_autoplace.get_next_resource_index() + 15,
       base_density = 1.5,
       regular_rq_factor_multiplier = 1.1,
       starting_rq_factor_multiplier = 2

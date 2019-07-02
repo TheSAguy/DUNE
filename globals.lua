@@ -17,6 +17,10 @@ function globals()
 	if global.emperor_message_1_sent == nil then
 		global.emperor_message_1_sent = false		
 	end	
+
+	if global.last_mission == nil then
+		global.last_mission = false		
+	end	
 	
 	if global.time_left == nil then
 		global.time_left = 0		

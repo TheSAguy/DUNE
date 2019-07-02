@@ -110,7 +110,7 @@ levels =
     },
     time = time_per_level/2 -- 5 Min  -- 20 min of game time up.
   },
-
+  
   -- 5
   {
     requirements =
@@ -255,7 +255,7 @@ levels =
     time = time_per_level * 1.5 -- 15min - 5K /min
   },
 
-  -- 21 - FINAL
+  -- 21 - FINAL Level
   {
     requirements =
     {
@@ -263,9 +263,10 @@ levels =
     },
     time = time_per_level * 3 -- 30min 10K/Min
   }
+
 }
 local completed_label_color = {g = 0.6}
-
+local low_time_left_label_color = {r = 1}
 
 function update_info()
   local level = levels[global.level]
@@ -284,12 +285,9 @@ function update_info()
   end
 end
 
-function get_time_left()
-	
+function get_time_left()	
   return global.level_started_at + time_modifier * levels[global.level].time * 60 - game.tick
 end
-
-local low_time_left_label_color = {r = 1}
 
 function update_time_left(tick)
   --If given not given a tick, we update regardless
@@ -337,6 +335,14 @@ script.on_event(defines.events.on_tick, function(event)
 	if game.tick % (60 * 60 * 10 * worker_spawn_time) == 0 then
 		
 		create_attack_group(global.level)
+		
+	end
+	
+	--- Final Attach Waves every 10 min
+	if game.tick % (60 * 60 * 10) == 0 and global.last_mission then
+	
+		create_enemy_forces()
+		create_attack_group_alt(50)
 		
 	end
 	
@@ -463,10 +469,11 @@ story_table =
         if time_left <= 0 then
           if result == false then
             for k, player in pairs (game.players) do
-              player.set_ending_screen_data({"points-achieved", util.format_number(global.points)})
+              --player.set_ending_screen_data({"points-achieved", util.format_number(global.points)})
+			  player.set_ending_screen_data({"what_happened"})
             end
-			
-			if not global.emperor_message_1_sent then
+			--- If you miss your shipment goal
+			if not global.emperor_message_1_sent and global.level ~= (#levels) then
 				game.print("The Emperor is not happy that you did not make the monthly shipment!")
 				game.print("Expect other houses to take advantage of this...")
 				global.emperor_message_1_sent = true
@@ -487,6 +494,7 @@ story_table =
             mod_gui.get_button_flow(player).next_level.destroy()
           end
         end
+		
 		--- Level GOAL Achieved
         global.level = global.level + 1
         local points_addition = (global.level - 1) * 10
@@ -496,7 +504,9 @@ story_table =
 		global.emperor_message_1_sent = false
 		---- Increase Evolution factor by 2.5%
 		game.forces.enemy.evolution_factor = game.forces.enemy.evolution_factor + evo_increase_per_level
-		--- Send out an attack group
+		
+		--- Create Enemy Forces that attack you and send them out.
+		create_enemy_forces()
 		create_attack_group_alt(global.level)
 
 		for k, chest in pairs (game.surfaces[1].find_entities_filtered{name = "dune-palace"}) do
@@ -506,6 +516,17 @@ story_table =
 			local rewards_count = rewards_table.count
 			chest.insert({name = rewards_name, count = rewards_count})
 		end	
+		---- FINAL MISSION Settings
+		if global.level == (#levels) then
+			global.last_mission = true
+			create_enemy_forces()
+			create_attack_group_alt(50)
+			if not game.is_multiplayer() then
+				game.show_message_dialog{text = {"dune_last_mission"}}
+				game.show_message_dialog{text = {"dune_last_mission2"}}
+			end
+
+		end
 		
         if global.level < #levels + 1 then
           for k, player in pairs (game.players) do
@@ -518,7 +539,8 @@ story_table =
     {
       action = function()
         for k, player in pairs (game.players) do
-          player.set_ending_screen_data({"points-achieved", util.format_number(global.points)})
+          --player.set_ending_screen_data({"points-achieved", util.format_number(global.points)})
+		  player.set_ending_screen_data({"dune_finish"})
         end
       end
     }
@@ -682,8 +704,7 @@ function spawn_random_worms(event)
 	
 
 end
-	
-	
+		
 	
 script.on_event(defines.events.on_chunk_generated, function(event)
     
@@ -787,7 +808,6 @@ function validate_prototypes()
   end
 end
 
-
 -- Remove worms from starting area
 function remove_worms()
 	if global.dune_worm_check then
@@ -855,7 +875,6 @@ function make_brick_circle()
 
 end	
 
-
 --- Select rewards to Spawn												
 function get_rewards_to_add()
 	local factor = global.level * 10 -- 10 - 210
@@ -919,8 +938,19 @@ function get_enemy_to_spawn()
 		  {spawn="laser-bot" , weight = 50 + (factor/4)}, -- 50 - 300
 		  {spawn="plasma-bot" , weight = 5 + (factor)}, -- 5 - 1005
 		}
+
+	local enemy_options_tier4 = 
+		{
+		  {spawn="scout-car" , weight = 100},-- 100 
+		  {spawn="shell-tank" , weight = 50}, -- 15
+		  {spawn="laser-bot" , weight = 100}, -- 100
+		  {spawn="plasma-bot" , weight = 50}, -- 50
+		}
 	
-		if global.level <= 5 then 
+		
+		if global.last_missio == true then 
+			enemy_options = enemy_options_tier4
+		elseif global.level <= 5 then 
 			enemy_options = enemy_options_tier1
 		elseif global.level <= 10 then 
 			enemy_options = enemy_options_tier2
@@ -943,16 +973,22 @@ end
 	
 
 function create_enemy_forces()
-
+	
+	
 	global.attack_counter = global.attack_counter + 1
 	if global.attack_counter >= ((attach_interval * 60 * 60) - (global.level * 180) - global.attack_increase) then
+		if global.last_mission then 
+			additional_count = 10
+		else
+			additional_count = 1
+		end
 
 		local time_left = get_time_left()
-		global.attack_increase = global.attack_increase + 30 -- This will increse the attack frequency over time.
+		global.attack_increase = global.attack_increase + 15 -- This will increse the attack frequency over time.
 
 		if time_left <= 0 then
 								
-			for i = 1, (global.level + 1) do
+			for i = 1, ((global.level) + additional_count) do
 				
 				local position = {}
 				local enemy_table = get_enemy_to_spawn()
@@ -969,8 +1005,7 @@ function create_enemy_forces()
 			
 				for _,force in pairs( game.forces )do
 					if force.name == "enemy" then
-						force.chart( game.surfaces[1], area)
-						
+						force.chart( game.surfaces[1], area)					
 					end
 				end
 			
@@ -1061,8 +1096,6 @@ function create_attack_group(level)
 	
 end	
 			
-
-
 
 function create_attack_group_alt(level)
 	

@@ -1,11 +1,10 @@
 
-
-
 require("prototypes/world/world_preset")
 require("prototypes/world/world")
 require("prototypes/units/total_automization_tweaks")
 require("prototypes/units/units")
 require("prototypes/units/moving_worms")
+
 
 
 local Blocked_Buildings = 
@@ -132,4 +131,6 @@ if settings.startup["Double_Player_Reach"].value then
 
 end	
 
-
+--- Add Melange Products to Tech
+thxbob.lib.tech.add_recipe_unlock("oil-processing", "melange-liquefaction")
+thxbob.lib.tech.add_recipe_unlock("oil-processing", "solid-melange")
